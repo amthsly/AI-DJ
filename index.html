@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI DJ – Spotify Style Chatbot</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: linear-gradient(145deg, #121212 0%, #1a1a1a 100%);
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .dj-container {
+      width: 100%;
+      max-width: 800px;
+      background: rgba(24, 24, 24, 0.95);
+      backdrop-filter: blur(12px);
+      border-radius: 2rem;
+      box-shadow: 0 25px 45px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+      overflow: hidden;
+    }
+    
+    .header {
+      background: #000000cc;
+      padding: 1.2rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #2c2c2c;
+    }
+    
+    .header .avatar {
+      background: #1ed760;
+      width: 48px;
+      height: 48px;
+      border-radius: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 #1ed76080; }
+      50% { box-shadow: 0 0 0 8px #1ed76040; }
+    }
+    
+    .header h1 {
+      color: white;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      font-size: 1.7rem;
+    }
+    
+    .header p {
+      color: #b3b3b3;
+      font-size: 0.8rem;
+    }
+    
+    .chat-area {
+      height: 450px;
+      overflow-y: auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: radial-gradient(circle at 10% 30%, #1e1e1e, #0a0a0a);
+    }
+    
+    .message {
+      display: flex;
+      gap: 12px;
+      max-width: 85%;
+      animation: fadeSlideUp 0.3s ease-out;
+    }
+    
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(12px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+    
+    .user-message {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+    
+    .bubble {
+      padding: 12px 18px;
+      border-radius: 24px;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      background: #2a2a2a;
+      color: #efefef;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    .user-message .bubble {
+      background: #1ed760;
+      color: #000;
+      font-weight: 500;
+    }
+    
+    .avatar-icon {
+      width: 32px;
+      height: 32px;
+      background: #333;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    
+    .user-message .avatar-icon {
+      background: #0f0f0f;
+    }
+    
+    .input-area {
+      padding: 1rem 1.5rem 1.8rem;
+      background: #0f0f0f;
+      border-top: 1px solid #2a2a2a;
+      display: flex;
+      gap: 10px;
+    }
+    
+    input {
+      flex: 1;
+      background: #2a2a2a;
+      border: none;
+      padding: 14px 20px;
+      border-radius: 40px;
+      color: white;
+      font-size: 1rem;
+      outline: none;
+      transition: 0.2s;
+    }
+    
+    input:focus {
+      background: #353535;
+      box-shadow: 0 0 0 2px #1ed76080;
+    }
+    
+    button {
+      background: #1ed760;
+      border: none;
+      width: 50px;
+      border-radius: 40px;
+      font-size: 1.4rem;
+      cursor: pointer;
+      transition: 0.2s;
+      font-weight: bold;
+    }
+    
+    button:hover {
+      background: #24e06b;
+      transform: scale(1.05);
+    }
+    
+    .typing {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      padding: 8px 16px;
+      background: #262626;
+      width: fit-content;
+      border-radius: 40px;
+      color: #bbb;
+      font-size: 0.8rem;
+    }
+    
+    .dot-floating {
+      width: 6px;
+      height: 6px;
+      background: #1ed760;
+      border-radius: 50%;
+      display: inline-block;
+      animation: wave 1.2s infinite;
+    }
+    
+    @keyframes wave {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-5px); opacity: 1; }
+    }
+    
+    /* Scrollbar styling */
+    .chat-area::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .chat-area::-webkit-scrollbar-track {
+      background: #1a1a1a;
+    }
+    
+    .chat-area::-webkit-scrollbar-thumb {
+      background: #1ed760;
+      border-radius: 10px;
+    }
+    
+    .now-playing {
+      background: #00000099;
+      padding: 8px 16px;
+      margin: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      color: #1ed760;
+      text-align: center;
+      backdrop-filter: blur(4px);
+    }
+  </style>
+</head>
+<body>
+<div class="dj-container">
+  <div class="header">
+    <div class="avatar">🎧</div>
+    <div>
+      <h1>AI DJ · Spotify</h1>
+      <p>Your personal music companion</p>
+    </div>
+  </div>
+  <div class="chat-area" id="chatMessages">
+    <div class="message">
+      <div class="avatar-icon">🤖</div>
+      <div class="bubble">🎧 Yo! I'm your AI DJ. Ask me to recommend a song, play something, or just vibe with me!</div>
+    </div>
+  </div>
+  <div class="now-playing" id="nowPlaying">💿 Ready to drop some beats</div>
+  <div class="input-area">
+    <input type="text" id="userInput" placeholder="Type a message... e.g., 'recommend a song', 'play something', 'who are you'" autocomplete="off">
+    <button id="sendBtn">➤</button>
+  </div>
+</div>
+
+<script>
+  const chatContainer = document.getElementById('chatMessages');
+  const userInput = document.getElementById('userInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const nowPlayingEl = document.getElementById('nowPlaying');
+  
+  let currentTrack = null;
+  
+  // Extensive music database
+  const musicDatabase = {
+    pop: ["The Weeknd - Blinding Lights", "Dua Lipa - Levitating", "Taylor Swift - Anti-Hero", "Harry Styles - As It Was"],
+    hiphop: ["Kendrick Lamar - Not Like Us", "Drake - God's Plan", "Nicki Minaj - Super Freaky Girl", "Travis Scott - FE!N"],
+    rock: ["Foo Fighters - The Glass", "Maneskin - The Loneliest", "Arctic Monkeys - There'd Better Be A Mirrorball"],
+    electronic: ["Fred again.. - adore u", "Skrillex - Rumble", "Calvin Harris - Miracle"],
+    rnb: ["SZA - Kill Bill", "Brent Faiyaz - WY@", "Steve Lacy - Bad Habit"]
+  };
+  
+  // AI DJ Response Engine (no backend needed!)
+  function getDJResponse(userMessage) {
+    const msg = userMessage.toLowerCase().trim();
+    
+    // Greetings
+    if (msg.match(/^(hello|hi|hey|yo|sup|what'?s up)/i)) {
+      return "🎧 Yo yo yo! Welcome to the DJ booth! Ready to discover some heat? Just say 'recommend' or 'play something'!";
+    }
+    
+    // Recommendations
+    if (msg.match(/recommend|suggest|give me a song|what should i listen|something good/i)) {
+      const genres = Object.keys(musicDatabase);
+      const randomGenre = genres[Math.floor(Math.random() * genres.length)];
+      const songs = musicDatabase[randomGenre];
+      const song = songs[Math.floor(Math.random() * songs.length)];
+      currentTrack = song;
+      nowPlayingEl.innerHTML = `🎵 NOW SPINNING: ${song} 🎵`;
+      return `🎶 I'm feeling some ${randomGenre} energy right now! Check this out: **${song}**\n\nWant me to play it? Just say "play"! 🎧`;
+    }
+    
+    // Play current track
+    if (msg.match(/^play|^start|drop it/i)) {
+      if (currentTrack) {
+        return `▶️ Dropping the beat... **${currentTrack}** is now playing on your imaginary decks! 🎧✨\n\nWant another recommendation? Just ask!`;
+      } else {
+        const allSongs = Object.values(musicDatabase).flat();
+        const randomSong = allSongs[Math.floor(Math.random() * allSongs.length)];
+        currentTrack = randomSong;
+        nowPlayingEl.innerHTML = `🎵 NOW SPINNING: ${randomSong} 🎵`;
+        return `▶️ Alright! Let me queue up **${randomSong}** for you. Vibe check: PASSED! 🎧`;
+      }
+    }
+    
+    // Genre-specific requests
+    for (const [genre, songs] of Object.entries(musicDatabase)) {
+      if (msg.includes(genre)) {
+        const song = songs[Math.floor(Math.random() * songs.length)];
+        currentTrack = song;
+        nowPlayingEl.innerHTML = `🎵 NOW SPINNING: ${song} 🎵`;
+        return `🎧 Ah, a ${genre} fan! I got you covered. Check out **${song}** - this one's a certified banger!`;
+      }
+    }
+    
+    // Artist search
+    const artists = ["taylor swift", "the weeknd", "drake", "kendrick", "sza", "billie", "harry styles", "dua lipa"];
+    for (const artist of artists) {
+      if (msg.includes(artist)) {
+        return `🎤 Great choice! ${artist.split(' ').map(w => w[0].toUpperCase() + w.slice(1)).join(' ')} has some amazing tracks. Try "recommend pop" for similar vibes! 🎧`;
+      }
+    }
+    
+    // Mood-based
+    if (msg.match(/happy|good vibes|upbeat|party/)) {
+      return "🎉 Let's keep those good vibes rolling! Try 'recommend pop' or 'play something electronic'! 🔥";
+    }
+    if (msg.match(/sad|chill|mellow|relax/)) {
+      return "🌙 I feel you. Check out some R&B or chill electronic. Just say 'recommend rnb' for those late night vibes! 🎧";
+    }
+    if (msg.match(/workout|gym|energy|pump/i)) {
+      return "💪 TIME TO PUMP UP! Electronic or hip-hop will get you going. Try 'recommend electronic' for maximum energy! 🎵";
+    }
+    
+    // Help/info
+    if (msg.match(/who are you|what can you do|help|commands/i)) {
+      return "🎧 I'm your AI DJ! Here's what I can do:\n\n• 'recommend a song' - Get a random banger\n• 'play' - Play the last recommended track\n• 'recommend pop/hiphop/rock/electronic/rnb' - Genre picks\n• 'happy' or 'sad' - Mood-based suggestions\n• Ask for specific artists!\n\nWhat are you feeling today? 🎶";
+    }
+    
+    // Thanks
+    if (msg.match(/thanks|thank you|appreciate/i)) {
+      return "🙏 You're welcome, fam! Keep the music flowing. Anything else you'd like to hear? 🎧";
+    }
+    
+    // Default / fallback
+    return "🤔 I didn't quite catch that, DJ fam! Try:\n• 'recommend a song'\n• 'play something'\n• 'recommend pop'\n• 'help' for all commands\n\nWhat's the vibe today? 🎧";
+  }
+  
+  function addMessage(text, isUser) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isUser ? 'user-message' : ''}`;
+    // Handle line breaks in response
+    const formattedText = text.replace(/\n/g, '<br>');
+    messageDiv.innerHTML = `
+      <div class="avatar-icon">${isUser ? '👤' : '🎧'}</div>
+      <div class="bubble">${formattedText}</div>
+    `;
+    chatContainer.appendChild(messageDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    
+    // Add a little bounce animation
+    messageDiv.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+      messageDiv.style.transform = 'scale(1)';
+      messageDiv.style.transition = 'transform 0.2s';
+    }, 10);
+  }
+  
+  function showTyping() {
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'message';
+    typingDiv.id = 'typingIndicator';
+    typingDiv.innerHTML = `
+      <div class="avatar-icon">🎧</div>
+      <div class="typing">DJ is thinking <span class="dot-floating"></span><span class="dot-floating" style="animation-delay:0.2s"></span><span class="dot-floating" style="animation-delay:0.4s"></span></div>
+    `;
+    chatContainer.appendChild(typingDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+  
+  function removeTyping() {
+    const typing = document.getElementById('typingIndicator');
+    if (typing) typing.remove();
+  }
+  
+  async function sendMessage() {
+    const message = userInput.value.trim();
+    if (message === "") return;
+    
+    addMessage(message, true);
+    userInput.value = "";
+    showTyping();
+    
+    // Simulate async thinking (like real AI)
+    setTimeout(() => {
+      const response = getDJResponse(message);
+      removeTyping();
+      addMessage(response, false);
+      
+      // Auto-scroll to bottom
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }, 600);
+  }
+  
+  sendBtn.addEventListener('click', sendMessage);
+  userInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+  
+  // Welcome message with cool entrance
+  setTimeout(() => {
+    addMessage("🎧 Try asking me:\n• 'recommend a song'\n• 'play something'\n• 'recommend pop'\n• 'help' for all features!", false);
+  }, 1000);
+</script>
+</body>
+</html>
